@@ -1,0 +1,29 @@
+name: default-docker-detect
+search:
+  query_clauses:
+    - reliability > 0.98
+    - rentable=True
+    - rented=False
+    - verified=True
+    - disk_space >= 200
+    - inet_up >= 100
+    - inet_down >= 200
+    - dph_total <= 1.50
+  order: score-
+  limit: 20
+  storage: 200
+launch:
+  gpu_name: RTX_4090
+  num_gpus: "1"
+  image: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+  disk: 200
+  ssh: true
+  direct: true
+  label: yolo-detect
+storage:
+  primary: oss
+  cache_mode: volume_optional
+  volume:
+    enabled: false
+    size_gb: 400
+

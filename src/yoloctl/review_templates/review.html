@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YOLO 标注走查</title>
+  <link rel="stylesheet" href="/static/styles.css?v={{ static_version }}">
+</head>
+<body
+  data-session-id="{{ session.session_id }}"
+  data-class-names='{{ class_names | tojson }}'
+  data-statuses='{{ statuses | tojson }}'
+  data-splits='{{ splits | tojson }}'
+>
+  <div class="shell">
+    <aside class="left-panel">
+      <div class="brand">
+        <div class="brand-kicker">YOLOCTL 标注走查</div>
+        <h1>证据优先修订台</h1>
+        <p>{{ dataset.dataset_key }} / {{ session.base_version_id }}</p>
+      </div>
+
+      <div class="left-sticky">
+        <section class="panel-block">
+          <div class="panel-title">当前会话</div>
+          <div id="session-summary" class="session-summary">
+            <div>总数 {{ summary.total }}</div>
+            <div>已编辑 {{ summary.edited }}</div>
+            <div>问题分 {{ summary.total_severity }}</div>
+          </div>
+        </section>
+
+        <details class="panel-block filter-shell">
+          <summary class="filter-summary">
+            <span class="panel-title">筛选器</span>
+            <span class="filter-summary-meta"></span>
+          </summary>
+          <div class="filters">
+            <label>数据集分片
+              <select id="filter-split">
+                <option value="">全部</option>
+              </select>
+            </label>
+            <label>审核状态
+              <select id="filter-status">
+                <option value="">全部</option>
+              </select>
+            </label>
+            <label>问题类型
+              <select id="filter-issue">
+                <option value="">全部</option>
+                <option value="cls">类别混淆</option>
+                <option value="fn">漏检</option>
+                <option value="fp">误检</option>
+                <option value="no_issue">无问题</option>
+              </select>
+            </label>
+            <div class="inline-filters">
+              <label>标注类别
+                <select id="filter-gt-class">
+                  <option value="">全部</option>
+                </select>
+              </label>
+              <label>预测类别
+                <select id="filter-pred-class">
+                  <option value="">全部</option>
+                </select>
+              </label>
+            </div>
+            <label class="checkbox-row">
+              <input id="filter-edited-only" type="checkbox">
+              只看已编辑
+            </label>
+            <label>文件名搜索
+              <input id="filter-query" type="text" placeholder="输入图片文件名">
+            </label>
+            <label>排序
+              <select id="filter-order">
+                <option value="issue_severity">按基线问题严重度</option>
+                <option value="filename">按文件名</option>
+              </select>
+            </label>
+          </div>
+        </details>
+      </div>
+
+      <section class="panel-block queue-panel">
+        <div class="panel-header-row">
+          <div class="panel-title">待走查队列</div>
+          <div id="queue-meta" class="panel-meta">0 项</div>
+        </div>
+        <div id="queue-list" class="queue-list"></div>
+      </section>
+    </aside>
+
+    <main class="center-panel">
+      <div class="viewer-shell">
+        <aside class="viewer-sidecar">
+          <div class="context-bar">
+            <div class="context-main">
+              <div class="context-label">当前图片</div>
+              <div id="item-header" class="item-header">尚未选择图片</div>
+              <div id="item-progress" class="context-meta">0 / 0</div>
+            </div>
+            <div class="context-actions">
+              <button id="prev-item" class="toolbar-btn subtle">上一张</button>
+              <button id="next-item" class="toolbar-btn subtle">下一张</button>
+              <div id="dirty-indicator" class="dirty-indicator">已保存</div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <button id="mode-select" class="toolbar-btn active">选择</button>
+              <button id="mode-draw" class="toolbar-btn">画框</button>
+              <button id="mode-pan" class="toolbar-btn">平移</button>
+              <button id="delete-object" class="toolbar-btn subtle">删除选中框</button>
+            </div>
+            <div class="toolbar-group compact-group">
+              <button id="zoom-out" class="toolbar-btn subtle">缩小</button>
+              <button id="zoom-in" class="toolbar-btn subtle">放大</button>
+              <button id="zoom-reset" class="toolbar-btn subtle">重置视图</button>
+            </div>
+            <div class="toolbar-group toggles">
+              <label><input id="toggle-gt" type="checkbox" checked> 原始标注</label>
+              <label><input id="toggle-pred" type="checkbox" checked> 模型预测</label>
+              <label><input id="toggle-draft" type="checkbox" checked> 当前草稿</label>
+            </div>
+          </div>
+        </aside>
+
+        <div class="viewer-main">
+          <div id="viewer-empty" class="viewer-empty">请先从左侧选择一张图片开始走查。</div>
+          <div id="viewer-stage" class="viewer-stage hidden">
+            <div id="stage-transform" class="stage-transform">
+              <img id="main-image" alt="走查图片">
+              <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="workspace-resizer"
+        class="workspace-resizer"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="调整主图与问题焦点高度"
+      >
+        <div class="workspace-resizer-line"></div>
+        <button id="workspace-resizer-grip" class="workspace-resizer-grip" type="button" aria-label="拖动以调整高度比例">
+          <span></span>
+        </button>
+        <div class="workspace-resizer-line"></div>
+      </div>
+
+      <section class="focus-panel">
+        <div class="focus-header">
+          <div>
+            <div class="panel-title">问题焦点</div>
+            <div id="selected-issue-summary" class="focus-summary">尚未选择问题</div>
+          </div>
+          <div class="focus-summary-cards">
+            <div id="baseline-summary-card" class="summary-card">基线诊断 0 项</div>
+            <div id="draft-summary-card" class="summary-card">当前草稿 0 项</div>
+          </div>
+        </div>
+
+        <div id="focus-empty" class="viewer-empty compact">当前图片没有可聚焦的问题。</div>
+        <div id="focus-stage" class="hidden">
+          <div id="issue-chip-row" class="issue-chip-row"></div>
+          <div class="focus-workbench">
+            <div class="focus-lens-panel">
+              <div class="focus-layer-switch">
+                <button type="button" class="layer-btn active" data-layer="gt">原始标注</button>
+                <button type="button" class="layer-btn" data-layer="pred">模型预测</button>
+                <button type="button" class="layer-btn" data-layer="draft">当前草稿</button>
+                <button type="button" class="layer-btn" data-layer="combined">叠加</button>
+              </div>
+              <div id="focus-lens" class="focus-lens">
+                <div id="focus-viewport" class="focus-viewport">
+                  <img id="focus-image" alt="问题焦点">
+                  <svg id="focus-overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="focus-meta-panel">
+              <div id="selected-issue-evidence" class="evidence-card">
+                <div class="muted">焦点区会展示当前问题的证据说明。</div>
+              </div>
+              <div id="baseline-state" class="state-card">基线诊断：等待选择问题</div>
+              <div id="draft-state" class="state-card">当前草稿：等待选择问题</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="right-panel">
+      <div class="inspector-tabs">
+        <button id="tab-diagnostic" class="inspector-tab active" type="button">诊断</button>
+        <button id="tab-edit" class="inspector-tab" type="button">修订</button>
+      </div>
+
+      <div id="inspector-diagnostic" class="inspector-view">
+        <section class="panel-block diagnostic-hero">
+          <div class="panel-title">当前问题</div>
+          <div id="selected-issue-detail" class="issue-detail-card">
+            <div class="muted">先从焦点区或问题列表选择一个问题。</div>
+          </div>
+          <div id="issue-actions" class="button-row wrap"></div>
+        </section>
+
+        <section class="panel-block">
+          <div class="panel-title">基线问题列表</div>
+          <div id="issue-list" class="issue-list"></div>
+        </section>
+      </div>
+
+      <div id="inspector-edit" class="inspector-view hidden">
+        <section class="panel-block">
+          <div class="panel-title">保存与状态</div>
+          <label>审核状态
+            <select id="item-status"></select>
+          </label>
+          <label>备注
+            <textarea id="item-note" rows="4" placeholder="记录问题、修正思路或注意事项"></textarea>
+          </label>
+          <div class="button-row">
+            <button id="load-predictions" class="toolbar-btn">加载预测结果</button>
+            <button id="use-all-predictions" class="toolbar-btn subtle">整张采用预测</button>
+          </div>
+          <div class="button-row">
+            <button id="save-item" class="toolbar-btn primary">保存当前修改</button>
+          </div>
+        </section>
+
+        <section class="panel-block">
+          <div class="panel-title">选中的草稿框</div>
+          <div id="selected-draft-empty" class="muted">先选中一个草稿框，再修改类别。</div>
+          <div id="selected-draft-panel" class="hidden">
+            <label>类别
+              <select id="selected-draft-class"></select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-block">
+          <div class="object-tabs">
+            <button id="tab-draft-objects" class="object-tab active" type="button">草稿框</button>
+            <button id="tab-prediction-objects" class="object-tab" type="button">预测结果</button>
+          </div>
+          <div id="draft-list" class="object-list"></div>
+          <div id="prediction-list" class="object-list hidden"></div>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <script src="/static/app.js?v={{ static_version }}"></script>
+</body>
+</html>

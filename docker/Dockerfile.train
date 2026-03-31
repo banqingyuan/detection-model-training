@@ -1,0 +1,25 @@
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-venv \
+    python3-pip \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace/project
+
+COPY . /workspace/project
+
+RUN python3 -m venv /workspace/project/.venv && \
+    . /workspace/project/.venv/bin/activate && \
+    python -m pip install --upgrade pip && \
+    python -m pip install -e .
+
+CMD ["/bin/bash"]
+

@@ -1,0 +1,13 @@
+version: 1
+datasets:
+  self-build-v3:
+    dataset_key: self-build-v3
+    aliases: []
+    latest_version_id: dsv-20260325T045541Z-v3
+    latest_version_label: v3
+    latest_sync_state: cloud_synced
+    version_ids:
+    - dsv-20260325T045541Z-v3
+    version_labels:
+    - v3
+    version_count: 1

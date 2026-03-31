@@ -1,0 +1,66 @@
+dataset_key: self-build-v3
+version_id: dsv-20260325T045541Z-v3
+version_label: v3
+task: detect
+source_type: bootstrap_archive
+sync_state: cloud_synced
+class_names:
+- RA
+- R2
+- R3
+- R4
+- R5
+- R6
+- R7
+- R8
+- R9
+- R10
+- RJ
+- RQ
+- RK
+- BA
+- B2
+- B3
+- B4
+- B5
+- B6
+- B7
+- B8
+- B9
+- B10
+- BJ
+- BQ
+- BK
+- D
+- X
+splits:
+  train: images/train
+  val: images/val
+  test: images/test
+split_counts:
+  train:
+    images: 6870
+    labels: 6870
+  val:
+    images: 1963
+    labels: 1963
+  test:
+    images: 982
+    labels: 982
+checksums: {}
+source_archive_path: artifacts/datasets/archives/self-build-v3.zip
+source_archive_sha256: a3216b0bbf2f0ae56a60d983d98688982960574632848790e9647aec7238faf4
+source_archive_size: 1935838654
+cloud_uri: oss://aijpq-data-collection/datasets/self-build-v3/dsv-20260325T045541Z-v3/source.zip
+cloud_manifest_uri: oss://aijpq-data-collection/datasets/self-build-v3/dsv-20260325T045541Z-v3/manifest.yaml
+cloud_sha256: a3216b0bbf2f0ae56a60d983d98688982960574632848790e9647aec7238faf4
+cloud_synced_at: '2026-03-25T06:44:46.670146+00:00'
+materialized_path: artifacts/datasets/self-build-v3/v3
+dataset_yaml_path: configs/datasets/self-build-v3--dsv-20260325T045541Z-v3.yaml
+parents: []
+lineage_type: root
+merge_note: null
+aliases: []
+metadata:
+  bootstrap_archive: artifacts/datasets/archives/self-build-v3.zip
+  source_detect_yaml: artifacts/datasets/self-build-v3/v3/detect.yaml

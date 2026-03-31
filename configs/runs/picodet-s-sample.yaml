@@ -1,0 +1,22 @@
+run_id: picodet-s-sample
+backend: paddledet
+task: detect
+dataset_key: self-build-v3
+dataset_version_id: dsv-20260325T045541Z-v3
+dataset_version_label: v3
+train:
+  device: "0"
+  project: artifacts/runs
+  name: picodet-s-sample
+export: {}
+tracking:
+  vast_profile: configs/vast/profiles/default-docker-detect.yaml
+paddledet:
+  root: /workspace/PaddleDetection
+  config: configs/picodet/picodet_s_320_coco_lcnet.yml
+  pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams
+  eval_weights: /workspace/output/picodet_s_custom/model_final.pdparams
+  device: "0"
+  eval: true
+  overrides:
+    num_classes: 28

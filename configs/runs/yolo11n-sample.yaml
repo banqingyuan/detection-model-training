@@ -1,0 +1,41 @@
+run_id: yolo11n-sample
+task: detect
+dataset_key: self-build-v3
+dataset_version_id: dsv-20260325T045541Z-v3
+dataset_version_label: v3
+model:
+  family: yolo11
+  size: n
+train:
+  epochs: 100
+  imgsz: 640
+  batch: 16
+  device: "0"
+  workers: 8
+  project: artifacts/runs
+  name: yolo11n-sample
+  cache: disk
+  amp: true
+  optimizer: auto
+export:
+  include_best_pt: true
+  formats:
+    - torchscript
+    - onnx
+    - engine
+  precision_targets:
+    - fp16
+  dynamic: false
+  simplify: true
+  assessment:
+    required: true
+    primary_metric: map50_95
+    max_drop:
+      fp16: 0.2
+      int8: 0.5
+    warn_metrics:
+      - map50
+      - recall
+    fail_on_reject: true
+tracking:
+  vast_profile: configs/vast/profiles/default-docker-detect.yaml
